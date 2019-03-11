@@ -4,7 +4,11 @@
   "description": "Machine learning data-visualizations on the subjects of painting.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "watch": "gulp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonobr1/objets-dinteret.git"
   },
   "author": "",
   "license": "ISC",
@@ -12,5 +16,12 @@
     "@tensorflow-models/coco-ssd": "^1.0.0",
     "@tensorflow/tfjs": "^1.0.0",
     "two.js": "^0.7.0-beta.3"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.26.3",
+    "gulp": "^4.0.0",
+    "gulp-less": "^4.0.1",
+    "less": "^3.9.0",
+    "less-watch-compiler": "^1.13.0"
   }
 }
