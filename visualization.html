@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scripts">
+      <script src="./third-party/three.js"></script>
+      <script src="./third-party/OrbitControls.js"></script>
+      <script src="./third-party/xhr.js"></script>
+      <script>
+
+        var renderer = new THREE.WebGLRenderer({ antialias: true });
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75);
+        var loader = new THREE.TextureLoader();
+        var json, plane;
+
+        init.amount = 2;
+
+        var texture = loader.load('./assets/images/the-pilgrim-magritte.jpg', init);
+
+        xhr.get('./assets/data/the-pilgrim-magritte.json', function(resp) {
+          json = JSON.parse(resp);
+          init();
+        });
+
+        function init() {
+          if (!init.index) {
+            init.index = 1;
+          } else {
+            init.index++;
+          }
+          if (!init.completed && init.index >= init.amount) {
+            init.completed = true;
+            setup();
+          }
+        }
+
+        function setup() {
+
+          var features = json.localizedObjectAnnotations;
+          var aspect = texture.image.width / texture.image.height;
+
+          plane = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(1 * aspect, 1, 32, 32),
+            new THREE.ShaderMaterial({
+
+              uniforms: {
+
+                image: { type: 't', value: texture },
+
+                origin: { type: 'v2', value: new THREE.Vector2() },
+                width: { type: 'f', value: 0.25 },
+                height: { type: 'f', value: 0.25 }
+
+              },
+
+              vertexShader: [
+
+                'uniform vec2 origin;',
+                'uniform float width;',
+                'uniform float height;',
+
+                'varying vec2 vUv;',
+
+                'void main() {',
+
+                  'vUv = uv;',
+
+                  'vec3 pos = vec3( position );',
+
+                  'float dist = distance( origin, pos.xy );',
+                  'float angle = atan( pos.y - origin.y, pos.x - origin.x );',
+                  // TODO: Map this based on the threshold paradigm of
+                  // either inside or outside of the bounding box area.
+                  'float radius = pow( dist, 0.33 );',
+
+                  'float cs = cos( angle ) / 2.0;',
+                  'float ss = sin( angle ) / 2.0;',
+
+                  'pos.x = radius * cs + origin.x;',
+                  'pos.y = radius * ss + origin.y;',
+                  // 'pos.z = - radius;',
+
+                  'gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );',
+
+                '}'
+
+              ].join('\n'),
+              fragmentShader: [
+
+                'uniform sampler2D image;',
+
+                'varying vec2 vUv;',
+
+                'void main() {',
+                  'vec4 texel = texture2D(image, vUv);',
+                  'gl_FragColor = texel;',
+                '}'
+
+              ].join('\n'),
+
+              // wireframe: true,
+              side: THREE.DoubleSide
+
+            })
+
+          );
+
+          plane.scale.set( 5, 5, 5 );
+
+          scene.add(plane);
+
+          camera.position.z = 10;
+          camera.lookAt(plane.position);
+
+          camera.userData.controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+          document.body.appendChild(renderer.domElement)
+          resize();
+          window.addEventListener('resize', resize, false);
+
+        }
+
+        function resize() {
+
+          var width = window.innerWidth;
+          var height = window.innerHeight;
+
+          renderer.setSize(width, height);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+
+          renderer.setAnimationLoop(draw);
+
+        }
+
+        function draw() {
+
+          camera.userData.controls.update();
+          renderer.render(scene, camera);
+
+        }
+
+      </script>
+    </div>
+  </body>
+</html>
