@@ -1,0 +1,244 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Objets d’intérêt</title>
+    <link type="text/css" rel="stylesheet" href="./styles/main.css">
+  </head>
+  <body>
+
+    <div id="content"></div>
+
+    <div class="scripts">
+
+      <script src="./node_modules/@tensorflow/tfjs/dist/tf.js"></script>
+      <script src="./node_modules/@tensorflow-models/coco-ssd/dist/coco-ssd.js"></script>
+      <script src="./third-party/xhr.js"></script>
+      <script src="./node_modules/two.js/build/two.js"></script>
+      <script src="./node_modules/two.js/extras/zui.js"></script>
+      <script>
+
+        var two = new Two({
+          type: Two.Types.canvas,
+          fullscreen: true,
+          autostart: true
+        }).appendTo(document.querySelector('#content'));
+
+        var stage = two.makeGroup();
+        var ui = two.makeGroup();
+
+        var cols = 5;
+        var sprites = [];
+        var loading = new Two.Text('Loading...', 0, 0);
+        var model;
+        var dropCount = 0;
+
+        setup();
+
+        function setup() {
+
+          ui.add(loading);
+
+          cocoSsd.load(/*'mobilenet_v2'*/).then(loaded);
+
+          two.renderer.domElement.addEventListener('drop', dropImages, false);
+          two.renderer.domElement.addEventListener('dragover', dragOver, false);
+          two.renderer.domElement.addEventListener('dragleave', dragLeave, false);
+
+          two.bind('resize', resize).bind('update', update);
+          resize();
+
+          var mouse = {
+            current: new Two.Vector(),
+            previous: new Two.Vector()
+          };
+
+          var zui = new Two.ZUI(stage);
+
+          // The min and max zoom levels for the stage
+          zui.addLimits(0.06, 8);
+
+          // TODO: Add Touch Events
+
+          two.renderer.domElement.addEventListener('mousewheel', scroll, false);
+          two.renderer.domElement.addEventListener('mousedown', mousedown, false);
+
+          function mousedown(e) {
+
+            mouse.current.set(e.clientX, e.clientY);
+            mouse.previous.copy(mouse.current);
+
+          	window.addEventListener('mousemove', mousemove, false);
+          	window.addEventListener('mouseup', mouseup, false);
+
+          }
+
+          function mousemove(e) {
+
+            mouse.current.set(e.clientX, e.clientY);
+
+            var dx = mouse.current.x - mouse.previous.x;
+            var dy = mouse.current.y - mouse.previous.y;
+
+          	// To Pan
+            zui.translateSurface(dx, dy);
+
+            mouse.previous.copy(mouse.current);
+
+          }
+
+          function mouseup(e) {
+
+            window.removeEventListener('mousemove', mousemove, false);
+          	window.removeEventListener('mouseup', mouseup, false);
+
+          }
+
+          function scroll(e) {
+
+            e.stopPropagation();
+            e.preventDefault();
+
+            var dy = (e.wheelDeltaY || - e.deltaY) / 1000;
+
+          	// To zoom by an increment
+            zui.zoomBy(dy, e.clientX, e.clientY);
+
+          }
+
+        }
+
+        function loaded(resp) {
+
+          model = resp;
+          loading.visible = false;
+
+        }
+
+        function dropImages(e) {
+
+          e.stopPropagation();
+          e.preventDefault();
+
+          var files = e.dataTransfer.files;
+          two.renderer.domElement.style.background = 'transparent';
+
+          var reader = new FileReader();
+          var index = 0;
+
+          reader.onload = function(e) {
+
+            var data = e.target.result;
+            var group = new Two.Group();
+            var sprite = new Two.Sprite(data);
+            sprite.visible = false;
+            group.sprite = sprite;
+
+            sprites.push(sprite);
+            group.add(sprite);
+            stage.add(group);
+
+            place(group);
+
+          };
+
+          function read(id) {
+
+            if (id >= files.length) {
+              return;
+            }
+
+            var file = files[id];
+            reader.readAsDataURL(file);
+
+          }
+
+          function place(group) {
+
+            if (group.sprite.texture.loaded) {
+              loaded();
+            } else {
+              group.sprite.texture.bind(Two.Events.load, loaded);
+            }
+
+            function loaded() {
+
+              var rect = group.sprite.getBoundingClientRect(true);
+              var width = two.width / cols;
+
+              group.translation.x = index * (width + 10);
+              group.translation.y = dropCount * two.height / 3;
+              group.scale = width / rect.width;
+              group.sprite.visible = true;
+
+              if (model) {
+
+                model.detect(group.sprite.texture.image).then(function(predictions) {
+
+                  for (var i = 0; i < predictions.length; i++) {
+
+                    var prediction = predictions[i];
+                    var box = prediction.bbox;
+                    var rectangle = new Two.Rectangle(0, 0, box[2], box[3]);
+
+                    rectangle.translation.x = box[0] + box[2] / 2 - rect.width / 2;
+                    rectangle.translation.y = box[1] + box[3] / 2 - rect.height / 2;
+                    rectangle.noFill().stroke = 'red';
+                    rectangle.linewidth = 1 / group.scale;
+
+                    var label = new Two.Text(prediction.class);
+                    label.fill = 'red';
+                    label.translation.copy(rectangle.translation);
+
+                    group.add(rectangle, label);
+
+                  }
+
+                });
+
+              }
+
+              group.sprite.texture.unbind(Two.Events.load, loaded);
+              index++;
+              read(index);
+
+            }
+
+          }
+
+          read(index);
+          dropCount++;
+
+        }
+
+        function dragOver(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          two.renderer.domElement.style.background = 'rgba(200, 255, 150, 0.33)';
+        }
+
+        function dragLeave(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          two.renderer.domElement.style.background = 'transparent';
+        }
+
+        function resize() {
+
+          ui.translation.set(two.width / 2, two.height / 2);
+
+        }
+
+        function update(frameCount, timeDelta) {
+
+          if (loading.visible && !(frameCount % 3)) {
+            loading.opacity = loading.opacity ? 0 : 1;
+          }
+
+        }
+
+      </script>
+
+    </div>
+  </body>
+</html>
