@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <div class="scripts">
+      <script src="./third-party/two.js"></script>
+      <script src="./third-party/xhr.js"></script>
+      <script>
+
+        var two = new Two({
+          fullscreen: true,
+          autostart: true
+        }).appendTo(document.body);
+
+        var json, features;
+        var file = 'the-pilgrim-magritte';
+        var interval = 5000;
+
+        var text = two.makeText(' ', 0, 0, {
+
+        });
+
+        xhr.get('./assets/data/' + file + '.json', function(resp) {
+          json = JSON.parse(resp);
+          setup();
+        });
+
+        function setup() {
+
+          features = [];
+
+          var zeroFeature = {
+            word: {
+              description: ' ',
+              mid: -1,
+              score: 1,
+              topicality: 1
+            },
+            color: {
+              color: {
+                blue: 77,
+                green: 48,
+                red: 37
+              },
+              hex: 'FFF',
+              percent: 100,
+              percentRounded: 100,
+              pixelFraction: 1.0,
+              rgb: '255, 255, 255',
+              score: 1
+            }
+          };
+
+          for (var i = 0; i < json.imagePropertiesAnnotation.dominantColors.colors.length; i++) {
+            var color = json.imagePropertiesAnnotation.dominantColors.colors[i];
+            var word = json.labelAnnotations[i];
+            features.push({
+              word: word,
+              color: color
+            }, zeroFeature);
+          }
+
+          features.index = - 1;
+
+          two.bind('resize', resize);
+          two.bind('update', draw);
+          resize();
+          schedule();
+
+        }
+
+        function resize() {
+          two.scene.position.set(two.width / 2, two.height / 2);
+          updateTextScale();
+        }
+
+        function schedule() {
+
+          var clock = new Date();
+          var time = clock.getSeconds() * 1000 + clock.getMilliseconds();
+          var to = interval - (time % interval);
+
+          setTimeout(increment, to);
+
+        }
+
+        function increment() {
+
+          features.index = (features.index + 1) % features.length;
+          var feature = features[features.index];
+
+          setTimeout(function() {
+            text.value = feature.word.description;
+            text.fill = tint(feature.color.color);
+            document.body.style.background = '#' + feature.color.hex;
+            updateTextScale();
+          }, 750 / 2);
+
+          requestAnimationFrame(schedule);
+
+        }
+
+        function tint(color) {
+          return 'rgb(' + Math.min(color.red + 50, 255) + ','
+            + Math.min(color.green + 50, 255) + ','
+            + Math.min(color.blue + 50, 255) + ')';
+        }
+
+        function updateTextScale() {
+          text.scale = 1;
+          var rect = text.getBoundingClientRect();
+          text.scale = 0.75 * two.width / rect.width;
+        }
+
+        function draw() {
+
+        }
+
+      </script>
+    </div>
+  </body>
+</html>
