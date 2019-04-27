@@ -24,7 +24,8 @@ exports.AnalyzeImage = function(event) {
   }
 
   var file = storage.bucket(object.bucket).file(object.name);
-  var filePath = `gs://${object.bucket}/${object.name}`;
+  // var filePath = `gs://${object.bucket}/${object.name}`;
+  var filePath = `https://storage.googleapis.com/${object.bucket}/${object.name}`;
 
   console.log(`Analyzing ${file.name} from ${filePath}.`);
 
