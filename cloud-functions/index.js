@@ -2,7 +2,9 @@ var fs = require('fs');
 var path = require('path');
 var { Storage } = require('@google-cloud/storage');
 var storage = new Storage();
-var vision = require('@google-cloud/vision').v1;
+var vision = require('@google-cloud/vision').v1p1beta1;
+
+var client = new vision.ImageAnnotatorClient();
 
 exports.AnalyzeImage = function(event) {
 
@@ -24,32 +26,72 @@ exports.AnalyzeImage = function(event) {
   }
 
   var file = storage.bucket(object.bucket).file(object.name);
-  // var filePath = `gs://${object.bucket}/${object.name}`;
-  var filePath = `https://storage.googleapis.com/${object.bucket}/${object.name}`;
+  var filePath = `gs://${object.bucket}/${object.name}`;
 
   console.log(`Analyzing ${file.name} from ${filePath}.`);
 
-  var client = new vision.ImageAnnotatorClient();
-
   return client
     .annotateImage({
-      features: [
-        { type: 'LANDMARK_DETECTION' },
-        { type: 'FACE_DETECTION' },
-        { type: 'OBJECT_LOCALIZATION' },
-        { type: 'LOGO_DETECTION' },
-        { type: 'LABEL_DETECTION' },
-        { type: 'DOCUMENT_TEXT_DETECTION' },
-        { type: 'SAFE_SEARCH_DETECTION' },
-        { type: 'IMAGE_PROPERTIES' },
-        { type: 'CROP_HINTS' },
-        { type: 'WEB_DETECTION' }
-      ],
-      image: {
-        source: {
-          filename: filePath
+      requests: [
+        {
+          features: [
+            {
+              maxResults: 50,
+              type: 'LANDMARK_DETECTION'
+            },
+            {
+              maxResults: 50,
+              type: 'FACE_DETECTION'
+            },
+            {
+              maxResults: 50,
+              type: 'OBJECT_LOCALIZATION'
+            },
+            {
+              maxResults: 50,
+              type: 'LOGO_DETECTION'
+            },
+            {
+              maxResults: 50,
+              type: 'LABEL_DETECTION'
+            },
+            {
+              maxResults: 50,
+              type: 'DOCUMENT_TEXT_DETECTION'
+            },
+            {
+              maxResults: 50,
+              type: 'SAFE_SEARCH_DETECTION'
+            },
+            {
+              maxResults: 50,
+              type: 'IMAGE_PROPERTIES'
+            },
+            {
+              maxResults: 50,
+              type: 'CROP_HINTS'
+            },
+            {
+              maxResults: 50,
+              type: 'WEB_DETECTION'
+            }
+          ],
+          image: {
+            source: {
+              imageUri: filePath
+            }
+          },
+          imageContext: {
+            cropHintsParams: {
+              aspectRatios: [
+                0.8,
+                1,
+                1.2
+              ]
+            }
+          }
         }
-      }
+      ]
     })
     .then(function(resp) {
       var filename = file.name.replace(/\.jpe?g$/i, '.json');
