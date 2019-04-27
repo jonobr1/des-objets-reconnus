@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <link rel="preload" type="text/css" href="./font/font.css" as="style">
     <style>
       * {
         margin: 0;
@@ -11,6 +12,7 @@
         position: absolute;
         top: 0;
         left: 0;
+        cursor: none;
       }
     </style>
   </head>
@@ -34,7 +36,7 @@
         var json, texture, features;
 
         var plane = new THREE.Mesh(
-          new THREE.PlaneBufferGeometry(1, 1, 64, 64),
+          new THREE.PlaneBufferGeometry(1, 1, 32, 32),
           new THREE.ShaderMaterial({
 
             uniforms: {
@@ -46,6 +48,7 @@
               from: { type: 'v4', value: new THREE.Vector4(0.5, 0.5, 1, 1) },
               to: { type: 'v4', value: new THREE.Vector4(0.5, 0.5, 1, 1) },
               tween: { type: 'f', value: 0 },
+              time: { type: 'f', value: 0 }
 
             },
 
@@ -57,6 +60,7 @@
               'uniform vec4 from;',
               'uniform vec4 to;',
               'uniform float tween;',
+              'uniform float time;',
 
               'varying vec2 vUv;',
 
@@ -94,6 +98,10 @@
                 'vec3 b = getPoint( position, to );',
                 'vec3 pos = tween * ( b - a ) + a;',
 
+                'float tick = 0.25 * time + pos.x * pos.y;',
+                // 'tick *= vUv.y;',
+                'pos.z = 0.005 * sin( 8.0 * PI * ( 0.25 * sin( tick ) + tick ) );',
+
                 'gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );',
 
               '}'
@@ -107,13 +115,13 @@
               'varying vec2 vUv;',
 
               'void main() {',
-                'vec4 texel = texture2D(image, vUv);',
+                'vec4 texel = texture2D( image, vUv );',
                 'gl_FragColor = vec4( texel.rgb, opacity );',
               '}'
 
             ].join('\n'),
 
-            transparent: true
+            transparent: true,
             // wireframe: true,
             // side: THREE.DoubleSide
 
@@ -193,7 +201,8 @@
           plane.material.uniforms.aspect.value = texture.image.width / texture.image.height;
 
           var zeroFeature = {
-            name: 'View All',
+            id: 'zero',
+            name: '',
             boundingPoly: {
               normalizedVertices: [
                 { x: 0, y: 0 },
@@ -238,6 +247,8 @@
         function draw(time) {
 
           TWEEN.update();
+
+          plane.material.uniforms.time.value = time / 1000;
 
           camera.userData.controls.update();
           renderer.render(scene, camera);

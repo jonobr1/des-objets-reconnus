@@ -2,121 +2,396 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <link rel="preload" type="text/css" href="./font/font.css" as="style">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        cursor: none;
+      }
+    </style>
   </head>
   <body>
     <div class="scripts">
       <script src="./third-party/two.js"></script>
+      <script src="./third-party/three.js"></script>
+      <script src="./third-party/OrbitControls.js"></script>
       <script src="./third-party/xhr.js"></script>
+      <script src="./third-party/tween.js"></script>
+      <script src="./src/timer.js"></script>
       <script>
 
+        var renderer = new THREE.WebGLRenderer({ antialias: true });
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75);
+        var loader = new THREE.ImageLoader();
+        var ids;
+        var colors = {
+          list: []
+        };
+
+        xhr.get('//storage.googleapis.com/cerveau/gac/v1/index.json', start);
+
+        var json, texture, features, image;
         var two = new Two({
-          fullscreen: true,
-          autostart: true
-        }).appendTo(document.body);
-
-        var json, features;
-        var file = 'the-pilgrim-magritte';
-        var interval = 5000;
-
-        var text = two.makeText(' ', 0, 0, {
-
+          type: Two.Types.canvas,
+          width: 512,
+          height: 512,
+          ratio: 1
         });
 
-        xhr.get('./assets/data/' + file + '.json', function(resp) {
-          json = JSON.parse(resp);
-          setup();
+        Two.Text.Ratio = 0.85;
+        var text = two.makeText('', 0, 0, {
+          family: 'apercu',
+          fill: 'white'
         });
+        text.scale = new Two.Vector(1, 1);
+        two.scene.position.set(two.width / 2, two.height / 2);
 
-        function setup() {
+        var plane = new THREE.Mesh(
+          new THREE.PlaneBufferGeometry(1, 1, 32, 32),
+          new THREE.ShaderMaterial({
+
+            uniforms: {
+
+              aspect: { type: 'f', value: 1 },
+              image: { type: 't', value: null },
+              opacity: { type: 'f', value: 1 },
+
+              topFrom: { type: 'c', value: new THREE.Color( 0x000000 ) },
+              bottomFrom: { type: 'c', value: new THREE.Color( 0x000000 ) },
+              topTo: { type: 'c', value: new THREE.Color( 0x000000 ) },
+              bottomTo: { type: 'c', value: new THREE.Color( 0x000000 ) },
+              tween: { type: 'f', value: 0 },
+              time: { type: 'f', value: 0 }
+
+            },
+
+            vertexShader: [
+
+              'const float PI = 3.141592653589793;',
+
+              'uniform float aspect;',
+              'uniform float tween;',
+              'uniform float time;',
+
+              'varying vec2 vUv;',
+
+              'vec3 getPoint( vec3 v ) {',
+
+                'vec3 result = vec3( v.xyz );',
+                'result.x *= aspect;',
+
+                'return result;',
+
+              '}',
+
+              'void main() {',
+
+                'vUv = uv;',
+
+                'vec3 pos = getPoint( position );',
+
+                'float tick = 0.25 * time + pos.x * pos.y;',
+                // 'tick *= vUv.y;',
+                'pos.z = 0.005 * sin( 8.0 * PI * ( 0.25 * sin( tick ) + tick ) );',
+
+                'gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );',
+
+              '}'
+
+            ].join('\n'),
+            fragmentShader: [
+
+              'const float PI = 3.141592653589793;',
+
+              'uniform sampler2D image;',
+              'uniform vec3 bottomTo;',
+              'uniform vec3 bottomFrom;',
+              'uniform vec3 topTo;',
+              'uniform vec3 topFrom;',
+              'uniform float tween;',
+              'uniform float opacity;',
+
+              'varying vec2 vUv;',
+
+              'void main() {',
+
+                'vec4 texel = texture2D( image, vUv );',
+
+                'vec4 bottom = vec4( mix( bottomFrom, bottomTo, tween ).xyz, 1.0 );',
+                'vec4 top = vec4( mix( topFrom, topTo, tween ).xyz, 1.0 );',
+
+                'vec4 layer = mix( bottom, top, vUv.y );',
+                'layer = mix( layer, texel, texel.a );',
+
+                'gl_FragColor = vec4( layer.rgb, opacity );',
+
+              '}'
+
+            ].join('\n'),
+
+            transparent: true
+            // wireframe: true,
+            // side: THREE.DoubleSide
+
+          })
+
+        );
+
+        plane.userData.tween = new TWEEN.Tween(plane.material.uniforms.tween)
+          .easing(TWEEN.Easing.Sinusoidal.InOut)
+          .delay(1000)
+          .onComplete(function() {
+            requestAnimationFrame(schedule);
+          });
+
+        plane.userData.fade = new TWEEN.Tween(plane.material.uniforms.opacity)
+          .easing(TWEEN.Easing.Sinusoidal.InOut);
+
+        plane.scale.set(5, 5, 5);
+
+        scene.add(plane);
+
+        camera.position.z = 10;
+        camera.lookAt(plane.position);
+
+        camera.userData.controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        document.body.appendChild(renderer.domElement)
+        resize();
+        window.addEventListener('resize', resize, false);
+        renderer.setAnimationLoop(draw);
+
+        function fetch(filepath) {
+
+          var index = 0;
+          var amount = 0;
+          var completed = false;
+
+          if (!texture) {
+            texture = new THREE.Texture(two.renderer.domElement);
+            plane.material.uniforms.image.value = texture;
+          }
+
+          image = loader.load(filepath + '.jpg', queue());
+
+          texture.generateMipmaps = false;
+          texture.magFilter = THREE.LinearFilter;
+          texture.minFilter = THREE.LinearFilter;
+          texture.format = THREE.RGBAFormat;
+          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+          var received = queue();
+
+          xhr.get(filepath + '.json', function(resp) {
+            json = JSON.parse(resp)[0];
+            received();
+          });
+
+          function loaded() {
+
+            index++;
+
+            if (!completed && index >= amount) {
+              setupFeatures();
+              completed = true;
+            }
+
+          }
+
+          function queue() {
+            amount++;
+            return loaded;
+          };
+
+        }
+
+        function setupFeatures() {
+
+          plane.material.uniforms.aspect.value = image.width / image.height;
+
+          var zeroFeature = {
+            id: 'zero',
+            name: '',
+            boundingPoly: {
+              normalizedVertices: [
+                { x: 0, y: 0 },
+                { x: 1, y: 0 },
+                { x: 1, y: 1 },
+                { x: 0, y: 1 }
+              ]
+            },
+
+          };
 
           features = [];
 
-          var zeroFeature = {
-            word: {
-              description: ' ',
-              mid: -1,
-              score: 1,
-              topicality: 1
-            },
-            color: {
-              color: {
-                blue: 77,
-                green: 48,
-                red: 37
-              },
-              hex: 'FFF',
-              percent: 100,
-              percentRounded: 100,
-              pixelFraction: 1.0,
-              rgb: '255, 255, 255',
-              score: 1
-            }
-          };
-
-          for (var i = 0; i < json.imagePropertiesAnnotation.dominantColors.colors.length; i++) {
-            var color = json.imagePropertiesAnnotation.dominantColors.colors[i];
-            var word = json.labelAnnotations[i];
-            features.push({
-              word: word,
-              color: color
-            }, zeroFeature);
+          for (var i = 0; i < json.localizedObjectAnnotations.length; i++) {
+            features.push(json.localizedObjectAnnotations[i], zeroFeature);
           }
 
+          colors.list = json.imagePropertiesAnnotation.dominantColors.colors;
           features.index = - 1;
 
-          two.bind('resize', resize);
-          two.bind('update', draw);
-          resize();
-          schedule();
+          if (json.localizedObjectAnnotations.length > 0) {
+
+            var a = colors.list[0 % colors.list.length].color;
+            var b = colors.list[1 % colors.list.length].color;
+
+            // Reset colors
+            updateColor(a, b);
+
+            plane.userData.fade
+              .to({ value: 1 }, 750)
+              .onComplete(schedule)
+              .start();
+
+          } else {
+            schedule();
+          }
 
         }
 
         function resize() {
-          two.scene.position.set(two.width / 2, two.height / 2);
-          updateTextScale();
+
+          var width = window.innerWidth;
+          var height = window.innerHeight;
+
+          renderer.setSize(width, height);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+
+        }
+
+        function draw(time) {
+
+          TWEEN.update();
+
+          plane.material.uniforms.time.value = time / 1000;
+
+          camera.userData.controls.update();
+          renderer.render(scene, camera);
+
+        }
+
+        function start(resp) {
+
+          ids = JSON.parse(resp);
+          ids.index = timer.getIndex(ids.length);
+
+          selectNextArtwork();
+
+        }
+
+
+        function selectNextArtwork() {
+
+          plane.userData.fade
+            .to({ value: 0 }, 750)
+            .onComplete(exec)
+            .start();
+
+          function exec() {
+
+            ids.index = (ids.index + 1) % ids.length;
+
+            var baseURL = '//storage.googleapis.com/cerveau/gac/v1/';
+            fetch(baseURL + ids[ids.index]);
+
+          }
+
         }
 
         function schedule() {
 
+          var interval = timer.interval;
           var clock = new Date();
           var time = clock.getSeconds() * 1000 + clock.getMilliseconds();
           var to = interval - (time % interval);
 
-          setTimeout(increment, to);
+          if (features.index < features.length - 1) {
+            setTimeout(animateToNextFeature, to);
+          } else {
+            setTimeout(selectNextArtwork, to);
+          }
 
         }
 
-        function increment() {
+        function animateToNextFeature() {
 
           features.index = (features.index + 1) % features.length;
+
           var feature = features[features.index];
+          var a = colors.list[features.index % colors.list.length].color;
+          var b = colors.list[(features.index + 1) % colors.list.length].color;
 
-          setTimeout(function() {
-            text.value = feature.word.description;
-            text.fill = tint(feature.color.color);
-            document.body.style.background = '#' + feature.color.hex;
-            updateTextScale();
-          }, 750 / 2);
+          updateColor(a, b);
 
-          requestAnimationFrame(schedule);
+          plane.material.uniforms.tween.value = 0;
+
+          plane.userData.tween.to({ value: 1 }, 750);
+          plane.userData.tween.start();
+
+          if (/zero/i.test(feature.id)) {
+            plane.userData.tween.onComplete(schedule);
+            plane.userData.tween.onStart(function() {
+              updateCanvas(feature);
+            });
+          } else {
+            plane.userData.tween.onComplete(function() {
+              updateCanvas(feature);
+              schedule();
+            });
+            plane.userData.tween.onStart(identity);
+          }
+
+        }
+
+        function updateColor(a, b) {
+
+          plane.material.uniforms.bottomFrom.value.copy(plane.material.uniforms.bottomTo.value);
+          plane.material.uniforms.bottomTo.value.setRGB(
+            a.red / 255,
+            a.green / 255,
+            a.blue / 255
+          );
+
+          plane.material.uniforms.topFrom.value.copy(plane.material.uniforms.topTo.value);
+          plane.material.uniforms.topTo.value.setRGB(
+            b.red / 255,
+            b.green / 255,
+            b.blue / 255
+          );
 
         }
 
-        function tint(color) {
-          return 'rgb(' + Math.min(color.red + 50, 255) + ','
-            + Math.min(color.green + 50, 255) + ','
-            + Math.min(color.blue + 50, 255) + ')';
+        function updateCanvas(feature) {
+
+          text.value = feature.name.toUpperCase();
+          text.scale.set(1, 1);
+
+          var rect = text.getBoundingClientRect(true);
+          var aspect = plane.material.uniforms.aspect.value;
+
+          text.scale.x = 0.85 * two.width / rect.width;
+          text.scale.y = aspect * text.scale.x;
+
+          two.update();
+          texture.needsUpdate = true;
+
         }
 
-        function updateTextScale() {
-          text.scale = 1;
-          var rect = text.getBoundingClientRect();
-          text.scale = 0.75 * two.width / rect.width;
+        function remap(v) {
+          return v - 0.5;
         }
 
-        function draw() {
-
-        }
+        function identity() {}
 
       </script>
     </div>

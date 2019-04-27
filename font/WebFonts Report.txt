@@ -1,0 +1,29 @@
+Web Fonts:
+**********
+
+apercu-black.ufo
+----------------
+source: /Users/jonobrandel/Downloads/apercu-black-desktop/apercu-black.ufo
+
+Build SVG
+'''''''''
+    path: /Users/jonobrandel/Documents/des-objets-reconnus/font/Apercu-Black.svg
+
+
+
+TTFAutohint options:
+********************
+addTTFAutoHintInfo     = False
+dwClearType            = False
+fallbackScript         = False
+gdiClearType           = True
+grayScale              = False
+hintRangeMaximum       = 50
+hintRangeMinimum       = 8
+hintingLimit           = 200
+noHintingLimit         = False
+noXHeightIncreaseLimit = False
+overRideFontLicense    = False
+preHinting             = False
+symbolFont             = False
+xHeightIncreaseLimit   = 14

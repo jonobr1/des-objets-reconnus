@@ -5,7 +5,7 @@ var timer = {
 
   now: Date.now,
 
-  interval: 1000,
+  interval: 5000,
 
   // One Day Resolution
   resolution: 1000 * 60 * 60 * 24,
