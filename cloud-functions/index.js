@@ -79,7 +79,9 @@ exports.AnalyzeImage = function(event) {
             }
           ],
           image: {
-            src: filePath
+            source: {
+              imageUri: filePath
+            }
           },
           imageContext: {
             cropHintsParams: {
