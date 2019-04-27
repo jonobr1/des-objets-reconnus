@@ -33,16 +33,16 @@ exports.AnalyzeImage = function(event) {
   return client
     .annotateImage({
       features: [
-        { type: vision.types.Feature.Type.LANDMARK_DETECTION },
-        { type: vision.types.Feature.Type.FACE_DETECTION },
-        { type: vision.types.Feature.Type.OBJECT_LOCALIZATION },
-        { type: vision.types.Feature.Type.LOGO_DETECTION },
-        { type: vision.types.Feature.Type.LABEL_DETECTION },
-        { type: vision.types.Feature.Type.DOCUMENT_TEXT_DETECTION },
-        { type: vision.types.Feature.Type.SAFE_SEARCH_DETECTION },
-        { type: vision.types.Feature.Type.IMAGE_PROPERTIES },
-        { type: vision.types.Feature.Type.CROP_HINTS },
-        { type: vision.types.Feature.Type.WEB_DETECTION }
+        { type: 'LANDMARK_DETECTION' },
+        { type: 'FACE_DETECTION' },
+        { type: 'OBJECT_LOCALIZATION' },
+        { type: 'LOGO_DETECTION' },
+        { type: 'LABEL_DETECTION' },
+        { type: 'DOCUMENT_TEXT_DETECTION' },
+        { type: 'SAFE_SEARCH_DETECTION' },
+        { type: 'IMAGE_PROPERTIES' },
+        { type: 'CROP_HINTS' },
+        { type: 'WEB_DETECTION' }
       ],
       image: {
         source: {
