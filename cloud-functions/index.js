@@ -26,74 +26,29 @@ exports.AnalyzeImage = function(event) {
   var file = storage.bucket(object.bucket).file(object.name);
   var filePath = `gs://${object.bucket}/${object.name}`;
 
-  console.log(object.bucket);
-  console.log (object.name);
-  console.log(`Analyzing ${file.name}.`);
+  console.log(`Analyzing ${file.name} from ${filePath}.`);
 
   var client = new vision.ImageAnnotatorClient();
 
   return client
     .annotateImage({
-      requests: [
-        {
-          features: [
-            {
-              maxResults: 50,
-              type: 'LANDMARK_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'FACE_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'OBJECT_LOCALIZATION'
-            },
-            {
-              maxResults: 50,
-              type: 'LOGO_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'LABEL_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'DOCUMENT_TEXT_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'SAFE_SEARCH_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'IMAGE_PROPERTIES'
-            },
-            {
-              maxResults: 50,
-              type: 'CROP_HINTS'
-            },
-            {
-              maxResults: 50,
-              type: 'WEB_DETECTION'
-            }
-          ],
-          image: {
-            source: {
-              imageUri: filePath
-            }
-          },
-          imageContext: {
-            cropHintsParams: {
-              aspectRatios: [
-                0.8,
-                1,
-                1.2
-              ]
-            }
-          }
+      features: [
+        { type: vision.types.Feature.Type.LANDMARK_DETECTION },
+        { type: vision.types.Feature.Type.FACE_DETECTION },
+        { type: vision.types.Feature.Type.OBJECT_LOCALIZATION },
+        { type: vision.types.Feature.Type.LOGO_DETECTION },
+        { type: vision.types.Feature.Type.LABEL_DETECTION },
+        { type: vision.types.Feature.Type.DOCUMENT_TEXT_DETECTION },
+        { type: vision.types.Feature.Type.SAFE_SEARCH_DETECTION },
+        { type: vision.types.Feature.Type.IMAGE_PROPERTIES },
+        { type: vision.types.Feature.Type.CROP_HINTS },
+        { type: vision.types.Feature.Type.WEB_DETECTION }
+      ],
+      image: {
+        source: {
+          filename: filePath
         }
-      ]
+      }
     })
     .then(function(resp) {
       var filename = file.name.replace(/\.jpe?g$/i, '.json');
