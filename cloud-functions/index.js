@@ -28,11 +28,11 @@ exports.AnalyzeImage = function(event) {
   var file = storage.bucket(object.bucket).file(object.name);
   var filePath = `gs://${object.bucket}/${object.name}`;
 
-  console.log(`Analyzing ${file.name} from ${filePath}.`);
-
-  download(file).then(analyze);
+  console.log(`Downloading image from ${filePath}.`);
 
   function analyze(image) {
+
+    console.log(`Analyzing ${file.name}.`);
 
     var options = {
       requests: [
@@ -80,7 +80,7 @@ exports.AnalyzeImage = function(event) {
             }
           ],
           image: {
-            content: image
+            content: image.toString('utf8')
           },
           imageContext: {
             cropHintsParams: {
@@ -108,6 +108,8 @@ exports.AnalyzeImage = function(event) {
       });
 
   }
+
+  return download(file).then(analyze);
 
 };
 

@@ -8,8 +8,8 @@ var file = storage.bucket('cerveau').file('la-poubelle/le-chateau-des-pyrenees-r
 
 file.download(function(err, resp) {
   if (err) {
-    console.log(err);
+    console.log('error', err);
   } else {
-    console.log(resp);
+    console.log('buffer', resp);
   }
 });
