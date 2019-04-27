@@ -124,7 +124,7 @@ function saveToCloudStorage(file, filename, data) {
       if (err) {
         reject(err);
       } else {
-        resolve(resp.body);
+        resolve(resp);
       }
 
     }
