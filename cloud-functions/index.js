@@ -30,8 +30,11 @@ exports.AnalyzeImage = function(event) {
 
   console.log(`Analyzing ${file.name} from ${filePath}.`);
 
-  return client
-    .annotateImage({
+  download(file).then(analyze);
+
+  function analyze(image) {
+
+    var options = {
       requests: [
         {
           features: [
@@ -77,9 +80,7 @@ exports.AnalyzeImage = function(event) {
             }
           ],
           image: {
-            source: {
-              imageUri: filePath
-            }
+            content: image
           },
           imageContext: {
             cropHintsParams: {
@@ -92,18 +93,44 @@ exports.AnalyzeImage = function(event) {
           }
         }
       ]
-    })
-    .then(function(resp) {
-      var filename = file.name.replace(/\.jpe?g$/i, '.json');
-      console.log(`Successfully analyzed ${file.name}.`, resp);
-      return saveToCloudStorage(file, filename, resp);
-    })
-    .catch(function(err) {
-      console.error(`Failed to analyze ${file.name}.`, err);
-      return Promise.reject(err);
-    });
+    };
+
+    return client
+      .annotateImage(options)
+      .then(function(resp) {
+        var filename = file.name.replace(/\.jpe?g$/i, '.json');
+        console.log(`Successfully analyzed ${file.name}.`, resp);
+        return saveToCloudStorage(file, filename, resp);
+      })
+      .catch(function(err) {
+        console.error(`Failed to analyze ${file.name}.`, err);
+        return Promise.reject(err);
+      });
+
+  }
 
 };
+
+function download(file) {
+
+  return new Promise(function(resolve, reject) {
+
+    file.download(function(err, resp) {
+
+      if (err) {
+        reject(err);
+      } else {
+        resolve(resp);
+      }
+
+    });
+
+  })
+  .catch(function(err) {
+    console.log(`Unable to download image ${file.name} into memory.`, err);
+  });
+
+}
 
 function saveToCloudStorage(file, filename, data) {
 
