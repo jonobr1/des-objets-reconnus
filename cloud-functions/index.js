@@ -34,6 +34,7 @@ exports.AnalyzeImage = function(event) {
 
     console.log(`Analyzing ${file.name}.`);
 
+    /*
     var options = {
       requests: [
         {
@@ -94,9 +95,10 @@ exports.AnalyzeImage = function(event) {
         }
       ]
     };
+    */
 
     return client
-      .annotateImage(options)
+      .annotateImage(filePath)
       .then(function(resp) {
         var filename = file.name.replace(/\.jpe?g$/i, '.json');
         console.log(`Successfully analyzed ${file.name}.`, resp);
@@ -109,7 +111,8 @@ exports.AnalyzeImage = function(event) {
 
   }
 
-  return download(file).then(analyze);
+  // return download(file).then(analyze);
+  return analyze();
 
 };
 

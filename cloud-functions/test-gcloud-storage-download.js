@@ -10,6 +10,6 @@ file.download(function(err, resp) {
   if (err) {
     console.log('error', err);
   } else {
-    console.log('buffer', resp);
+    console.log('buffer', resp[0]);
   }
 });
