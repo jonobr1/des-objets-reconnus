@@ -2,7 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var { Storage } = require('@google-cloud/storage');
 var storage = new Storage();
-var vision = require('@google-cloud/vision').v1p1beta1;
+var vision = require('@google-cloud/vision').v1;
 
 var client = new vision.ImageAnnotatorClient();
 
@@ -34,26 +34,13 @@ exports.AnalyzeImage = function(event) {
 
     console.log(`Analyzing ${file.name}.`);
 
-    /*
     var options = {
       requests: [
         {
           features: [
             {
               maxResults: 50,
-              type: 'LANDMARK_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'FACE_DETECTION'
-            },
-            {
-              maxResults: 50,
               type: 'OBJECT_LOCALIZATION'
-            },
-            {
-              maxResults: 50,
-              type: 'LOGO_DETECTION'
             },
             {
               maxResults: 50,
@@ -65,19 +52,11 @@ exports.AnalyzeImage = function(event) {
             },
             {
               maxResults: 50,
-              type: 'SAFE_SEARCH_DETECTION'
-            },
-            {
-              maxResults: 50,
               type: 'IMAGE_PROPERTIES'
             },
             {
               maxResults: 50,
               type: 'CROP_HINTS'
-            },
-            {
-              maxResults: 50,
-              type: 'WEB_DETECTION'
             }
           ],
           image: {
@@ -95,10 +74,9 @@ exports.AnalyzeImage = function(event) {
         }
       ]
     };
-    */
 
     return client
-      .annotateImage(filePath)
+      .annotateImage(options)
       .then(function(resp) {
         var filename = file.name.replace(/\.jpe?g$/i, '.json');
         console.log(`Successfully analyzed ${file.name}.`, resp);
@@ -111,8 +89,8 @@ exports.AnalyzeImage = function(event) {
 
   }
 
-  // return download(file).then(analyze);
-  return analyze();
+  return download(file).then(analyze);
+  // return analyze();
 
 };
 
