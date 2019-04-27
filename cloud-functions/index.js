@@ -42,19 +42,7 @@ exports.AnalyzeImage = function(event) {
         },
         {
           maxResults: 50,
-          type: 'LABEL_DETECTION'
-        },
-        {
-          maxResults: 50,
-          type: 'DOCUMENT_TEXT_DETECTION'
-        },
-        {
-          maxResults: 50,
           type: 'IMAGE_PROPERTIES'
-        },
-        {
-          maxResults: 50,
-          type: 'CROP_HINTS'
         }
       ],
       image: image,
