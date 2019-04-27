@@ -99,7 +99,7 @@
 
                 'float tick = 0.25 * time + pos.x * pos.y;',
                 // 'tick *= vUv.y;',
-                'pos.z = 0.005 * sin( 8.0 * PI * ( 0.25 * sin( tick ) + tick ) );',
+                'pos.z = 0.0025 * sin( 7.0 * PI * ( 0.25 * sin( tick ) + tick ) );',
 
                 'gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );',
 
