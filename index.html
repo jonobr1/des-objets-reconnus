@@ -81,8 +81,8 @@
                 'float x = ( v.x - origin.x ) / width;',
                 'float y = ( v.y - origin.y ) / height;',
 
-                'result.x = clamp( x + origin.x, - 0.5, 0.5 );',
-                'result.y = clamp( y + origin.y, - 0.5, 0.5 );',
+                'result.x = clamp( x, - 0.5, 0.5 );',
+                'result.y = clamp( y, - 0.5, 0.5 );',
 
                 'result.x *= aspect;',
 
