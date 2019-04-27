@@ -1,0 +1,19 @@
+{
+  "name": "analyze-image",
+  "version": "1.0.0",
+  "description": "Background Cloud Function to generate annotated image data from Google Vision API to Cloud Storage as JSON file.",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "gcloud functions deploy AnalyzeImage --runtime nodejs8 --trigger-bucket cerveau"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonobr1/objets-dinteret.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/storage": "^2.5.0",
+    "@google-cloud/vision": "^0.25.0"
+  }
+}
