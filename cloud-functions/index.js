@@ -34,49 +34,43 @@ exports.AnalyzeImage = function(event) {
 
     console.log(`Analyzing ${file.name}.`);
 
-    var options = {
-      requests: [
+    var request = {
+      features: [
         {
-          features: [
-            {
-              maxResults: 50,
-              type: 'OBJECT_LOCALIZATION'
-            },
-            {
-              maxResults: 50,
-              type: 'LABEL_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'DOCUMENT_TEXT_DETECTION'
-            },
-            {
-              maxResults: 50,
-              type: 'IMAGE_PROPERTIES'
-            },
-            {
-              maxResults: 50,
-              type: 'CROP_HINTS'
-            }
-          ],
-          image: {
-            content: image.toString('utf8')
-          },
-          imageContext: {
-            cropHintsParams: {
-              aspectRatios: [
-                0.8,
-                1,
-                1.2
-              ]
-            }
-          }
+          maxResults: 50,
+          type: 'OBJECT_LOCALIZATION'
+        },
+        {
+          maxResults: 50,
+          type: 'LABEL_DETECTION'
+        },
+        {
+          maxResults: 50,
+          type: 'DOCUMENT_TEXT_DETECTION'
+        },
+        {
+          maxResults: 50,
+          type: 'IMAGE_PROPERTIES'
+        },
+        {
+          maxResults: 50,
+          type: 'CROP_HINTS'
         }
-      ]
+      ],
+      image: image,
+      imageContext: {
+        cropHintsParams: {
+          aspectRatios: [
+            0.8,
+            1,
+            1.2
+          ]
+        }
+      }
     };
 
     return client
-      .annotateImage(options)
+      .annotateImage(request)
       .then(function(resp) {
         var filename = file.name.replace(/\.jpe?g$/i, '.json');
         console.log(`Successfully analyzed ${file.name}.`, resp);
