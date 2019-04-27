@@ -20,46 +20,177 @@
       <script src="./third-party/OrbitControls.js"></script>
       <script src="./third-party/xhr.js"></script>
       <script src="./third-party/tween.js"></script>
+      <script src="./src/timer.js"></script>
       <script>
 
         var renderer = new THREE.WebGLRenderer({ antialias: true });
         var scene = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera(75);
-        var loader = new THREE.TextureLoader();
-        var json, plane, features;
-        // var file = 'a-sunday-on-la-grande-jatte-seurat';
-        // var file = 'still-life-with-cherries-aman';
-        var file = 'the-pilgrim-magritte';
-        var interval = 1000;
+        var loader = new THREE.ImageLoader();
+        var ids;
 
-        init.amount = 2;
+        xhr.get('//storage.googleapis.com/cerveau/gac/v1/index.json', start);
 
-        var texture = loader.load('./assets/images/' + file + '.jpg', init);
-        texture.generateMipmaps = false;
-        texture.magFilter = THREE.LinearFilter;
-        texture.minFilter = THREE.LinearFilter;
-        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        var json, texture, features;
 
-        xhr.get('./assets/data/' + file + '.json', function(resp) {
-          json = JSON.parse(resp);
-          init();
-        });
+        var plane = new THREE.Mesh(
+          new THREE.PlaneBufferGeometry(1, 1, 64, 64),
+          new THREE.ShaderMaterial({
 
-        function init() {
-          if (!init.index) {
-            init.index = 1;
-          } else {
-            init.index++;
+            uniforms: {
+
+              aspect: { type: 'f', value: 1 },
+              image: { type: 't', value: null },
+              opacity: { type: 'f', value: 1 },
+
+              from: { type: 'v4', value: new THREE.Vector4(0.5, 0.5, 1, 1) },
+              to: { type: 'v4', value: new THREE.Vector4(0.5, 0.5, 1, 1) },
+              tween: { type: 'f', value: 0 },
+
+            },
+
+            vertexShader: [
+
+              'const float PI = 3.141592653589793;',
+
+              'uniform float aspect;',
+              'uniform vec4 from;',
+              'uniform vec4 to;',
+              'uniform float tween;',
+
+              'varying vec2 vUv;',
+
+              'vec3 getPoint( vec3 v, vec4 area ) {',
+
+                'vec3 result = vec3( 0.0 );',
+
+                'vec2 origin = area.xy;',
+                'float width = area.z;',
+                'float height = area.w;',
+
+                'origin -= 0.5;',
+                'origin.y *= - 1.0;',
+
+                // 'origin.x *= aspect;',
+                // 'width *= aspect;',
+
+                'float x = ( v.x - origin.x ) / width;',
+                'float y = ( v.y - origin.y ) / height;',
+
+                'result.x = clamp( x + origin.x, - 0.5, 0.5 );',
+                'result.y = clamp( y + origin.y, - 0.5, 0.5 );',
+
+                'result.x *= aspect;',
+
+                'return result;',
+
+              '}',
+
+              'void main() {',
+
+                'vUv = uv;',
+
+                'vec3 a = getPoint( position, from );',
+                'vec3 b = getPoint( position, to );',
+                'vec3 pos = tween * ( b - a ) + a;',
+
+                'gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );',
+
+              '}'
+
+            ].join('\n'),
+            fragmentShader: [
+
+              'uniform sampler2D image;',
+              'uniform float opacity;',
+
+              'varying vec2 vUv;',
+
+              'void main() {',
+                'vec4 texel = texture2D(image, vUv);',
+                'gl_FragColor = vec4( texel.rgb, opacity );',
+              '}'
+
+            ].join('\n'),
+
+            transparent: true
+            // wireframe: true,
+            // side: THREE.DoubleSide
+
+          })
+
+        );
+
+        plane.userData.tween = new TWEEN.Tween(plane.material.uniforms.tween)
+          .easing(TWEEN.Easing.Elastic.InOut)
+          .delay(1000)
+          .onComplete(function() {
+            requestAnimationFrame(schedule);
+          });
+
+        plane.userData.fade = new TWEEN.Tween(plane.material.uniforms.opacity)
+          .easing(TWEEN.Easing.Sinusoidal.InOut);
+
+        plane.scale.set(5, 5, 5);
+
+        scene.add(plane);
+
+        camera.position.z = 10;
+        camera.lookAt(plane.position);
+
+        camera.userData.controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        document.body.appendChild(renderer.domElement)
+        resize();
+        window.addEventListener('resize', resize, false);
+        renderer.setAnimationLoop(draw);
+
+        function fetch(filepath) {
+
+          var index = 0;
+          var amount = 0;
+          var completed = false;
+
+          if (!texture) {
+            texture = new THREE.Texture();
+            plane.material.uniforms.image.value = texture;
           }
-          if (!init.completed && init.index >= init.amount) {
-            init.completed = true;
-            setup();
+
+          texture.image = loader.load(filepath + '.jpg', queue());
+          texture.generateMipmaps = false;
+          texture.magFilter = THREE.LinearFilter;
+          texture.minFilter = THREE.LinearFilter;
+          texture.format = THREE.RGBFormat;
+          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+          var received = queue();
+
+          xhr.get(filepath + '.json', function(resp) {
+            json = JSON.parse(resp)[0];
+            received();
+          });
+
+          function loaded() {
+
+            index++;
+
+            if (!completed && index >= amount) {
+              setupFeatures();
+              completed = true;
+            }
+
           }
+
+          function queue() {
+            amount++;
+            return loaded;
+          };
+
         }
 
-        function setup() {
+        function setupFeatures() {
 
-          var aspect = texture.image.width / texture.image.height;
+          plane.material.uniforms.aspect.value = texture.image.width / texture.image.height;
 
           var zeroFeature = {
             name: 'View All',
@@ -81,115 +212,15 @@
 
           features.index = - 1;
 
-          plane = new THREE.Mesh(
-            new THREE.PlaneBufferGeometry(1, 1, 256, 256),
-            new THREE.ShaderMaterial({
-
-              uniforms: {
-
-                aspect: { type: 'f', value: aspect },
-                image: { type: 't', value: texture },
-
-                from: { type: 'v4', value: new THREE.Vector4(0.5, 0.5, 1, 1) },
-                to: { type: 'v4', value: new THREE.Vector4(0.5, 0.5, 1, 1) },
-                tween: { type: 'f', value: 0 },
-
-              },
-
-              vertexShader: [
-
-                'const float PI = 3.141592653589793;',
-
-                'uniform float aspect;',
-                'uniform vec4 from;',
-                'uniform vec4 to;',
-                'uniform float tween;',
-
-                'varying vec2 vUv;',
-
-                'vec3 getPoint( vec3 v, vec4 area ) {',
-
-                  'vec3 result = vec3( 0.0 );',
-
-                  'vec2 origin = area.xy;',
-                  'float width = area.z;',
-                  'float height = area.w;',
-
-                  'origin -= 0.5;',
-                  'origin.y *= - 1.0;',
-
-                  // 'origin.x *= aspect;',
-                  // 'width *= aspect;',
-
-                  'float x = ( v.x - origin.x ) / width;',
-                  'float y = ( v.y - origin.y ) / height;',
-
-                  'result.x = clamp( x + origin.x, - 0.5, 0.5 );',
-                  'result.y = clamp( y + origin.y, - 0.5, 0.5 );',
-
-                  'result.x *= aspect;',
-
-                  'return result;',
-
-                '}',
-
-                'void main() {',
-
-                  'vUv = uv;',
-
-                  'vec3 a = getPoint( position, from );',
-                  'vec3 b = getPoint( position, to );',
-                  'vec3 pos = tween * ( b - a ) + a;',
-
-                  'gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );',
-
-                '}'
-
-              ].join('\n'),
-              fragmentShader: [
-
-                'uniform sampler2D image;',
-
-                'varying vec2 vUv;',
-
-                'void main() {',
-                  'vec4 texel = texture2D(image, vUv);',
-                  'gl_FragColor = mix( vec4( 1.0, 0.0, 0.0, 1.0 ), texel, texel.a );',
-                '}'
-
-              ].join('\n'),
-
-              wireframe: true,
-              // side: THREE.DoubleSide
-
-            })
-
-          );
-
-          plane.userData.tween = new TWEEN.Tween(plane.material.uniforms.tween)
-            .easing(TWEEN.Easing.Elastic.InOut)
-            .delay(1000)
-            .onComplete(function() {
-              requestAnimationFrame(schedule);
-            });
-
-          plane.scale.set(5, 5, 5);
-
-          scene.add(plane);
-
-          camera.position.z = 10;
-          camera.lookAt(plane.position);
-
-          camera.userData.controls = new THREE.OrbitControls(camera, renderer.domElement);
-
-          document.body.appendChild(renderer.domElement)
-          resize();
-          window.addEventListener('resize', resize, false);
-
-          // increment();
-          schedule();
-
-          renderer.setAnimationLoop(draw);
+          if (json.localizedObjectAnnotations.length > 0) {
+            texture.needsUpdate = true;
+            plane.userData.fade
+              .to({ value: 1 }, 750)
+              .onComplete(schedule)
+              .start();
+          } else {
+            schedule();
+          }
 
         }
 
@@ -213,17 +244,50 @@
 
         }
 
+        function start(resp) {
+
+          ids = JSON.parse(resp);
+          ids.index = timer.getIndex(ids.length);
+
+          selectNextArtwork();
+
+        }
+
+
+        function selectNextArtwork() {
+
+          plane.userData.fade
+            .to({ value: 0 }, 750)
+            .onComplete(exec)
+            .start();
+
+          function exec() {
+
+            ids.index = (ids.index + 1) % ids.length;
+
+            var baseURL = '//storage.googleapis.com/cerveau/gac/v1/';
+            fetch(baseURL + ids[ids.index]);
+
+          }
+
+        }
+
         function schedule() {
 
+          var interval = timer.interval;
           var clock = new Date();
           var time = clock.getSeconds() * 1000 + clock.getMilliseconds();
           var to = interval - (time % interval);
 
-          setTimeout(increment, to);
+          if (features.index < features.length - 1) {
+            setTimeout(animateToNextFeature, to);
+          } else {
+            setTimeout(selectNextArtwork, to);
+          }
 
         }
 
-        function increment() {
+        function animateToNextFeature() {
 
           features.index = (features.index + 1) % features.length;
 
