@@ -81,6 +81,7 @@
               'uniform float time;',
 
               'varying vec2 vUv;',
+              'varying float depth;',
 
               'vec3 getPoint( vec3 v ) {',
 
@@ -98,8 +99,8 @@
                 'vec3 pos = getPoint( position );',
 
                 'float tick = 0.25 * time + pos.x * pos.y;',
-                // 'tick *= vUv.y;',
-                'pos.z = 0.0025 * sin( 7.0 * PI * ( 0.25 * sin( tick ) + tick ) );',
+                'depth = sin( 7.0 * PI * ( 0.25 * sin( tick ) + tick ) );',
+                'pos.z = 0.0025 * depth;',
 
                 'gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );',
 
@@ -119,6 +120,7 @@
               'uniform float opacity;',
 
               'varying vec2 vUv;',
+              'varying float depth;',
 
               'void main() {',
 
@@ -130,7 +132,11 @@
                 'vec4 layer = mix( bottom, top, vUv.y );',
                 'layer = mix( layer, texel, texel.a );',
 
-                'gl_FragColor = vec4( layer.rgb, opacity );',
+                'float topToBottom = ( 1.0 - vUv.y );',
+                'float normalizedDepth = ( 1.0 - ( depth + 1.0 ) / 2.0 );',
+                'float shadows = 1.0 - 0.2 * topToBottom * normalizedDepth;',
+
+                'gl_FragColor = vec4( layer.rgb * shadows, opacity );',
 
               '}'
 
