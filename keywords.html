@@ -20,7 +20,7 @@
     <div class="scripts">
       <script src="./third-party/two.js"></script>
       <script src="./third-party/three.js"></script>
-      <script src="./third-party/OrbitControls.js"></script>
+      <!-- <script src="./third-party/OrbitControls.js"></script> -->
       <script src="./third-party/xhr.js"></script>
       <script src="./third-party/tween.js"></script>
       <script src="./src/timer.js"></script>
@@ -48,6 +48,7 @@
         Two.Text.Ratio = 0.85;
         var text = two.makeText('', 0, 0, {
           family: 'apercu',
+          weight: 900,
           fill: 'white'
         });
         text.scale = new Two.Vector(1, 1);
@@ -237,7 +238,7 @@
         camera.position.z = 10;
         camera.lookAt(plane.position);
 
-        camera.userData.controls = new THREE.OrbitControls(camera, renderer.domElement);
+        // camera.userData.controls = new THREE.OrbitControls(camera, renderer.domElement);
 
         document.body.appendChild(renderer.domElement)
         resize();
@@ -291,6 +292,7 @@
         function setupFeatures() {
 
           plane.material.uniforms.aspect.value = image.width / image.height;
+          fitCameraToObject();
 
           var zeroFeature = {
             id: 'zero',
@@ -358,7 +360,7 @@
 
           plane.material.uniforms.time.value += tick / 1000;
 
-          camera.userData.controls.update();
+          // camera.userData.controls.update();
           renderer.render(scene, camera);
 
           timeAtLastFrame = time;
@@ -478,6 +480,23 @@
 
         function remap(v) {
           return v - 0.5;
+        }
+
+        function fitCameraToObject() {
+
+            var offset = 1.5;
+
+            var maxDim = Math.max(
+              plane.scale.x / plane.material.uniforms.aspect.value,
+              plane.scale.y * plane.material.uniforms.aspect.value,
+              plane.scale.z);
+            var fov = camera.fov * Math.PI / 180;
+            var cameraZ = Math.abs(maxDim * Math.tan(fov * 2));
+
+            cameraZ *= offset;
+
+            camera.position.z = cameraZ;
+
         }
 
         function identity() {}
