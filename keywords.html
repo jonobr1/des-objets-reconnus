@@ -23,8 +23,30 @@
       <!-- <script src="./third-party/OrbitControls.js"></script> -->
       <script src="./third-party/xhr.js"></script>
       <script src="./third-party/tween.js"></script>
+      <!-- <script src="./third-party/tone.js"></script> -->
       <script src="./src/timer.js"></script>
+      <!-- <script src="./src/scales.js"></script> -->
       <script>
+
+        // var synth = new Tone.PolySynth(4, Tone.Synth).toMaster();
+        // synth.scale = Scales.Major.C.Seventh;
+        //
+        // synth.set({
+        //   oscillator: {
+        //     type: 'sine'
+        //   },
+        //   envelope: {
+        //     attack: 2,
+        //     attackCurve: 'exponential',
+        //     decay: 1,
+        //     decayCurve: 'exponential',
+        //     sustain: 0.6,
+        //     release: 2,
+        //     releaseCurve: 'exponential'
+        //   }
+        // });
+        //
+        // synth.volume.value = - 24;
 
         var renderer = new THREE.WebGLRenderer({ antialias: true });
         var scene = new THREE.Scene();
@@ -218,6 +240,18 @@
 
         );
 
+        plane.userData.hitTest = new THREE.Mesh(
+          new THREE.PlaneBufferGeometry(1000, 1000, 1, 1),
+          new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            wireframe: true,
+            opacity: 0,
+            transparent: true
+          })
+        );
+
+        plane.add(plane.userData.hitTest);
+
         plane.userData.tween = new TWEEN.Tween(plane.material.uniforms.tween)
           .easing(TWEEN.Easing.Sinusoidal.InOut)
           .delay(1000)
@@ -369,6 +403,8 @@
 
         function start(resp) {
 
+          // Tone.start();
+
           ids = JSON.parse(resp);
           ids.index = timer.getIndex(ids.length);
 
@@ -446,6 +482,8 @@
 
         function updateColor(a, b) {
 
+          // playChord();
+
           plane.material.uniforms.bottomFrom.value.copy(plane.material.uniforms.bottomTo.value);
           plane.material.uniforms.bottomTo.value.setRGB(
             a.red / 255,
@@ -482,20 +520,49 @@
           return v - 0.5;
         }
 
+        var upperRightCorner = new THREE.Vector2(1, 1);
+        var raycaster = new THREE.Raycaster();
+
         function fitCameraToObject() {
 
-            var offset = 1.5;
+          raycaster.setFromCamera(upperRightCorner, camera);
+          var intersections = raycaster.intersectObject(plane.userData.hitTest);
+          var reference = intersections[0].point;
+          var aspect = plane.material.uniforms.aspect.value;
 
-            var maxDim = Math.max(
-              plane.scale.x / plane.material.uniforms.aspect.value,
-              plane.scale.y * plane.material.uniforms.aspect.value,
-              plane.scale.z);
-            var fov = camera.fov * Math.PI / 180;
-            var cameraZ = Math.abs(maxDim * Math.tan(fov * 2));
+          var width = reference.x / aspect;
+          var height = reference.y * aspect;
 
-            cameraZ *= offset;
+          if (aspect >= 1) {
+            scale = reference.x;
+          } else {
+            scale = reference.y;
+          }
+          plane.scale.set(scale, scale, scale);
 
-            camera.position.z = cameraZ;
+        }
+
+        function playChord() {
+
+          var duration = timer.interval;
+          var chord = [];
+          var amount = 2 * Math.floor(Math.random() * 5) + 2;
+          // var amount = Math.floor(Math.random() * 12) + 3;
+
+          for (var i = 0; i < amount; i++) {
+
+            var pct = i / amount;
+            var id = Math.floor(pct * synth.scale.length);
+            var note = synth.scale[id];
+
+            if (chord.indexOf(note) < 0) {
+              chord.push(note);
+
+            }
+
+          }
+
+          synth.triggerAttackRelease(chord, 5);
 
         }
 

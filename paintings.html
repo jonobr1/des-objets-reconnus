@@ -198,6 +198,18 @@
 
         );
 
+        plane.userData.hitTest = new THREE.Mesh(
+          new THREE.PlaneBufferGeometry(1000, 1000, 1, 1),
+          new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            wireframe: true,
+            opacity: 0,
+            transparent: true
+          })
+        );
+
+        plane.add(plane.userData.hitTest);
+
         plane.userData.tween = new TWEEN.Tween(plane.material.uniforms.tween)
           .easing(TWEEN.Easing.Elastic.InOut)
           .delay(1000)
@@ -426,19 +438,25 @@
 
         }
 
+        var upperRightCorner = new THREE.Vector2(1, 1);
+        var raycaster = new THREE.Raycaster();
+
         function fitCameraToObject() {
 
-            var offset = 1.5;
+          raycaster.setFromCamera(upperRightCorner, camera);
+          var intersections = raycaster.intersectObject(plane.userData.hitTest);
+          var reference = intersections[0].point;
+          var aspect = plane.material.uniforms.aspect.value;
 
-            var maxDim = Math.max(
-              plane.scale.x / plane.material.uniforms.aspect.value,
-              plane.scale.y * plane.material.uniforms.aspect.value,
-              plane.scale.z);            var fov = camera.fov * Math.PI / 180;
-            var cameraZ = Math.abs(maxDim * Math.tan(fov * 2));
+          var width = reference.x / aspect;
+          var height = reference.y * aspect;
 
-            cameraZ *= offset;
-
-            camera.position.z = cameraZ;
+          if (aspect >= 1) {
+            scale = reference.x;
+          } else {
+            scale = reference.y;
+          }
+          plane.scale.set(scale, scale, scale);
 
         }
 
