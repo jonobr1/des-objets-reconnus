@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <link rel="preload" type="text/css" href="./font/font.css" as="style">
+    <link type="text/css" href="./font/font.css">
     <style>
       * {
         margin: 0;
@@ -47,6 +47,9 @@
         // });
         //
         // synth.volume.value = - 24;
+
+        var upperRightCorner = new THREE.Vector2(1, 1);
+        var raycaster = new THREE.Raycaster();
 
         var renderer = new THREE.WebGLRenderer({ antialias: true });
         var scene = new THREE.Scene();
@@ -380,6 +383,8 @@
           camera.aspect = width / height;
           camera.updateProjectionMatrix();
 
+          fitCameraToObject();
+
         }
 
         var timeAtLastFrame = 0;
@@ -519,9 +524,6 @@
         function remap(v) {
           return v - 0.5;
         }
-
-        var upperRightCorner = new THREE.Vector2(1, 1);
-        var raycaster = new THREE.Raycaster();
 
         function fitCameraToObject() {
 

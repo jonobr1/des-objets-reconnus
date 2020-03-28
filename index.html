@@ -25,17 +25,31 @@
         position: absolute;
         display: block;
         border: none;
-        width: 50%;
-        height: 100%;
       }
 
+      iframe.top {
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 50%;
+      }
       iframe.left {
         left: 0;
         top: 0;
+        width: 50%;
+        height: 100%;
       }
       iframe.right {
         right: 0;
         top: 0;
+        width: 50%;
+        height: 100%;
+      }
+      iframe.bottom {
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 50%;
       }
 
     </style>
@@ -43,5 +57,32 @@
   <body>
     <iframe class="left" src="./keywords.html" width="50%" height="100%"></iframe>
     <iframe class="right" src="./paintings.html" width="50%" height="100%"></iframe>
+    <script>
+
+      var a = document.body.querySelector('iframe.left');
+      var b = document.body.querySelector('iframe.right');
+      window.addEventListener('resize', resize, false);
+      resize();
+
+      function resize() {
+
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+
+        if (width > height) {
+          a.classList.remove('top');
+          a.classList.add('left');
+          b.classList.remove('bottom');
+          b.classList.add('right');
+        } else {
+          a.classList.remove('left');
+          a.classList.add('top');
+          b.classList.remove('right');
+          b.classList.add('bottom');
+        }
+
+      }
+
+    </script>
   </body>
 </html>

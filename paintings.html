@@ -2,7 +2,6 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <link rel="preload" type="text/css" href="./font/font.css" as="style">
     <style>
       * {
         margin: 0;
@@ -24,6 +23,9 @@
       <script src="./third-party/tween.js"></script>
       <script src="./src/timer.js"></script>
       <script>
+
+        var upperRightCorner = new THREE.Vector2(1, 1);
+        var raycaster = new THREE.Raycaster();
 
         var renderer = new THREE.WebGLRenderer({ antialias: true });
         var scene = new THREE.Scene();
@@ -328,6 +330,8 @@
           camera.aspect = width / height;
           camera.updateProjectionMatrix();
 
+          fitCameraToObject();
+
         }
 
         var timeAtLastFrame = 0;
@@ -437,9 +441,6 @@
             .start();
 
         }
-
-        var upperRightCorner = new THREE.Vector2(1, 1);
-        var raycaster = new THREE.Raycaster();
 
         function fitCameraToObject() {
 
