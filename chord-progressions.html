@@ -1,0 +1,61 @@
+<!doctype>
+<html>
+  <head>
+    <title>Chord Progressions</title>
+  </head>
+  <body>
+    <div class="scripts">
+      <script src="./third-party/tone.js"></script>
+      <script src="./src/scales.js"></script>
+      <script>
+
+        // var tremolo = new Tone.Tremolo(9, 0.75).toMaster().start();
+        var synth = new Tone.PolySynth(4, Tone.Synth).toMaster();
+        // tremolo.set('wet', 1);
+        synth.set({
+          portamento: 0,
+          envelope: {
+            attack: 1,
+            decay: 1,
+            sustain: 0.1,
+            release: 3,
+            attackCurve: 'sine',
+            decayCurve: 'exponential',
+            releaseCurve: 'sine'
+          },
+          oscillator: {
+            type: 'triangle',
+            frequency: 440,
+            partials: [1, 0.25],
+            partialCount: 0
+          }
+        });
+
+        var options = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+
+        window.addEventListener('click', function() {
+
+          var scale = Scales.Major[options[Math.floor(Math.random() * options.length)]]
+            .Seventh;
+          var result = [];
+          var octave;
+          for (var i = 0; i < 4; i++) {
+            if (i === 0) {
+              octave = 4 * Math.floor(Math.random() * 7);
+            } else {
+              octave += 4 * Math.floor((Math.random() * 4) - 2);
+              octave = Math.min(Math.max(octave, 0), 4 * 7);
+            }
+            var note = scale[i + octave];
+            // var note = scale[Math.floor(Math.random() * scale.length)];
+            result.push(note);
+          }
+          console.log(result);
+          synth.triggerAttackRelease(result, 1, undefined, 1 / (result.length + 1));
+
+        }, false);
+
+      </script>
+    </div>
+  </body>
+</html>
