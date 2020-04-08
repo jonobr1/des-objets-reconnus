@@ -23,30 +23,30 @@
       <!-- <script src="./third-party/OrbitControls.js"></script> -->
       <script src="./third-party/xhr.js"></script>
       <script src="./third-party/tween.js"></script>
-      <!-- <script src="./third-party/tone.js"></script> -->
+      <script src="./third-party/tone.js"></script>
       <script src="./src/timer.js"></script>
-      <!-- <script src="./src/scales.js"></script> -->
+      <script src="./src/scales.js"></script>
       <script>
 
-        // var synth = new Tone.PolySynth(4, Tone.Synth).toMaster();
-        // synth.scale = Scales.Major.C.Seventh;
-        //
-        // synth.set({
-        //   oscillator: {
-        //     type: 'sine'
-        //   },
-        //   envelope: {
-        //     attack: 2,
-        //     attackCurve: 'exponential',
-        //     decay: 1,
-        //     decayCurve: 'exponential',
-        //     sustain: 0.6,
-        //     release: 2,
-        //     releaseCurve: 'exponential'
-        //   }
-        // });
-        //
-        // synth.volume.value = - 24;
+      var synth = new Tone.PolySynth(4, Tone.Synth).toMaster();
+      synth.set({
+        portamento: 0,
+        envelope: {
+          attack: 3,
+          decay: 1,
+          sustain: 0.1,
+          release: 3,
+          attackCurve: 'sine',
+          decayCurve: 'exponential',
+          releaseCurve: 'sine'
+        },
+        oscillator: {
+          type: 'triangle',
+          frequency: 440,
+          partials: [1, 0.25],
+          partialCount: 0
+        }
+      });
 
         var upperRightCorner = new THREE.Vector2(1, 1);
         var raycaster = new THREE.Raycaster();
@@ -87,14 +87,14 @@
 
               aspect: { type: 'f', value: 1 },
               image: { type: 't', value: null },
-              opacity: { type: 'f', value: 1 },
+              opacity: { type: 'f', value: 0 },
               confidence: { type: 'f', value: 1 },
 
               topFrom: { type: 'c', value: new THREE.Color( 0x000000 ) },
               bottomFrom: { type: 'c', value: new THREE.Color( 0x000000 ) },
               topTo: { type: 'c', value: new THREE.Color( 0x000000 ) },
               bottomTo: { type: 'c', value: new THREE.Color( 0x000000 ) },
-              tween: { type: 'f', value: 0 },
+              tween: { type: 'f', value: 1 },
               time: { type: 'f', value: 0 }
 
             },
@@ -236,8 +236,6 @@
             ].join('\n'),
 
             transparent: true
-            // wireframe: true,
-            // side: THREE.DoubleSide
 
           })
 
@@ -291,6 +289,7 @@
           if (!texture) {
             texture = new THREE.Texture(two.renderer.domElement);
             plane.material.uniforms.image.value = texture;
+            // updateCanvas({ name: '' });
           }
 
           image = loader.load(filepath + '.jpg', queue());
@@ -408,7 +407,7 @@
 
         function start(resp) {
 
-          // Tone.start();
+          window.addEventListener('click', Tone.start, false);
 
           ids = JSON.parse(resp);
           ids.index = timer.getIndex(ids.length);
@@ -487,7 +486,7 @@
 
         function updateColor(a, b) {
 
-          // playChord();
+          playChord(a, b);
 
           plane.material.uniforms.bottomFrom.value.copy(plane.material.uniforms.bottomTo.value);
           plane.material.uniforms.bottomTo.value.setRGB(
@@ -544,27 +543,26 @@
 
         }
 
+        var scaleOptions = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+
         function playChord() {
 
-          var duration = timer.interval;
-          var chord = [];
-          var amount = 2 * Math.floor(Math.random() * 5) + 2;
-          // var amount = Math.floor(Math.random() * 12) + 3;
-
-          for (var i = 0; i < amount; i++) {
-
-            var pct = i / amount;
-            var id = Math.floor(pct * synth.scale.length);
-            var note = synth.scale[id];
-
-            if (chord.indexOf(note) < 0) {
-              chord.push(note);
-
+          var sid = Math.floor(Math.random() * scaleOptions.length);
+          var scale = Scales.Major[scaleOptions[sid]].Seventh;
+          var result = [];
+          var octave;
+          for (var i = 0; i < 4; i++) {
+            if (i === 0) {
+              octave = 4 * Math.floor(Math.random() * 7);
+            } else {
+              octave += 4 * Math.floor((Math.random() * 4) - 2);
+              octave = Math.min(Math.max(octave, 0), 4 * 7);
             }
-
+            var note = scale[i + octave];
+            result.push(note);
           }
 
-          synth.triggerAttackRelease(chord, 5);
+          synth.triggerAttackRelease(result, 1, undefined, 1 / (result.length + 1));
 
         }
 
