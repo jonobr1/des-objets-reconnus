@@ -29,7 +29,7 @@
       <script>
 
       var tremolo = new Tone.Tremolo(0, 0.75).toMaster().start();
-      var synth = new Tone.PolySynth(8, Tone.Synth).connect(tremolo);
+      var synth = new Tone.PolySynth(12, Tone.Synth).connect(tremolo);
       tremolo.set('spread', 120);
       synth.set({
         portamento: 0,
