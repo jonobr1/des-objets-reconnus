@@ -28,14 +28,16 @@
       <script src="./src/scales.js"></script>
       <script>
 
-      var synth = new Tone.PolySynth(4, Tone.Synth).toMaster();
+      var tremolo = new Tone.Tremolo(0, 0.75).toMaster().start();
+      var synth = new Tone.PolySynth(8, Tone.Synth).connect(tremolo);
+      tremolo.set('spread', 120);
       synth.set({
         portamento: 0,
         envelope: {
           attack: 3,
-          decay: 1,
+          decay: 1.5,
           sustain: 0.1,
-          release: 3,
+          release: 5,
           attackCurve: 'sine',
           decayCurve: 'exponential',
           releaseCurve: 'sine'
@@ -57,7 +59,8 @@
         var loader = new THREE.ImageLoader();
         var ids;
         var colors = {
-          list: []
+          list: [],
+          reference: new THREE.Color()
         };
 
         xhr.get('//storage.googleapis.com/cerveau/gac/v1/index.json', start);
@@ -264,7 +267,11 @@
           .easing(TWEEN.Easing.Sinusoidal.InOut);
 
         plane.userData.tweenConfidence = new TWEEN.Tween(plane.material.uniforms.confidence)
-          .easing(TWEEN.Easing.Back.Out);
+          .easing(TWEEN.Easing.Back.Out)
+          .onUpdate(function() {
+            var t = 1 - plane.material.uniforms.confidence.value;
+            tremolo.set('frequency', t * 8);
+          });
 
         plane.scale.set(5, 5, 5);
 
@@ -544,25 +551,34 @@
         }
 
         var scaleOptions = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+        var colorOptions = ['red', 'orange', 'yellow', 'green', 'blue', 'violet'];
+        var hsl = {};
 
-        function playChord() {
+        function playChord(color) {
 
-          var sid = Math.floor(Math.random() * scaleOptions.length);
+          colors.reference.setRGB(
+            color.red / 255,
+            color.green / 255,
+            color.blue / 255
+          );
+          colors.reference.getHSL(hsl);
+
+          var sid = Math.floor(hsl.h * scaleOptions.length);
           var scale = Scales.Major[scaleOptions[sid]].Seventh;
-          var result = [];
+
           var octave;
-          for (var i = 0; i < 4; i++) {
+          var amount = 4;
+          for (var i = 0; i < amount; i++) {
             if (i === 0) {
-              octave = 4 * Math.floor(Math.random() * 7);
+              octave = 4 * Math.floor(hsl.l * 7);
             } else {
               octave += 4 * Math.floor((Math.random() * 4) - 2);
               octave = Math.min(Math.max(octave, 0), 4 * 7);
             }
             var note = scale[i + octave];
-            result.push(note);
+            var velocity = Math.random() / (amount * 2);
+            synth.triggerAttackRelease(note, 1.5, undefined, velocity);
           }
-
-          synth.triggerAttackRelease(result, 1, undefined, 1 / (result.length + 1));
 
         }
 
