@@ -28,27 +28,29 @@
       <script src="./src/scales.js"></script>
       <script>
 
-      var tremolo = new Tone.Tremolo(0, 0.75).toMaster().start();
-      var synth = new Tone.PolySynth(12, Tone.Synth).connect(tremolo);
-      tremolo.set('spread', 120);
-      synth.set({
-        portamento: 0,
-        envelope: {
-          attack: 3,
-          decay: 1.5,
-          sustain: 0.1,
-          release: 5,
-          attackCurve: 'sine',
-          decayCurve: 'exponential',
-          releaseCurve: 'sine'
-        },
-        oscillator: {
-          type: 'triangle',
-          frequency: 440,
-          partials: [1, 0.25],
-          partialCount: 0
-        }
-      });
+        var baseURL = '//storage.googleapis.com/cerveau/gac/v1/';
+
+        var tremolo = new Tone.Tremolo(0, 0.75).toMaster().start();
+        var synth = new Tone.PolySynth(12, Tone.Synth).connect(tremolo);
+        tremolo.set('spread', 120);
+        synth.set({
+          portamento: 0,
+          envelope: {
+            attack: 3,
+            decay: 1.5,
+            sustain: 0.1,
+            release: 5,
+            attackCurve: 'sine',
+            decayCurve: 'exponential',
+            releaseCurve: 'sine'
+          },
+          oscillator: {
+            type: 'triangle',
+            frequency: 440,
+            partials: [1, 0.25],
+            partialCount: 0
+          }
+        });
 
         var upperRightCorner = new THREE.Vector2(1, 1);
         var raycaster = new THREE.Raycaster();
@@ -63,7 +65,7 @@
           reference: new THREE.Color()
         };
 
-        xhr.get('//storage.googleapis.com/cerveau/gac/v1/index.json', start);
+        xhr.get(`${baseURL}index.json`, start);
 
         var json, texture, features, image;
         var two = new Two({
@@ -434,8 +436,6 @@
           function exec() {
 
             ids.index = (ids.index + 1) % ids.length;
-
-            var baseURL = '//storage.googleapis.com/cerveau/gac/v1/';
             fetch(baseURL + ids[ids.index]);
 
           }

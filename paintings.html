@@ -24,6 +24,8 @@
       <script src="./src/timer.js"></script>
       <script>
 
+        var baseURL = '//storage.googleapis.com/cerveau/gac/v1/';
+
         var upperRightCorner = new THREE.Vector2(1, 1);
         var raycaster = new THREE.Raycaster();
 
@@ -33,7 +35,7 @@
         var loader = new THREE.ImageLoader();
         var ids;
 
-        xhr.get('//storage.googleapis.com/cerveau/gac/v1/index.json', start);
+        xhr.get(`${baseURL}index.json`, start);
 
         var json, texture, features;
 
@@ -373,8 +375,6 @@
           function exec() {
 
             ids.index = (ids.index + 1) % ids.length;
-
-            var baseURL = '//storage.googleapis.com/cerveau/gac/v1/';
             fetch(baseURL + ids[ids.index]);
 
           }
