@@ -35,7 +35,7 @@
         var loader = new THREE.ImageLoader();
         var ids;
 
-        timer.interval = 150;
+        timer.interval = 350;
 
         xhr.get(`${baseURL}index.json`, start);
 
@@ -217,13 +217,13 @@
         plane.add(plane.userData.hitTest);
 
         plane.userData.tween = new TWEEN.Tween(plane.material.uniforms.tween)
-          .easing(TWEEN.Easing.Circular.InOut)
+          .easing(TWEEN.Easing.Elastic.Out)
           .onComplete(function() {
             requestAnimationFrame(schedule);
           });
 
         plane.userData.fade = new TWEEN.Tween(plane.material.uniforms.opacity)
-          .easing(TWEEN.Easing.Circular.InOut);
+          .easing(TWEEN.Easing.Sinusoidal.InOut);
 
         plane.userData.tweenConfidence = new TWEEN.Tween(plane.material.uniforms.confidence)
           .easing(TWEEN.Easing.Circular.InOut);
@@ -316,7 +316,6 @@
 
           if (json.localizedObjectAnnotations.length > 0) {
             texture.needsUpdate = true;
-            schedule();
             plane.userData.fade
               .to({ value: 1 }, timer.interval)
               .onComplete(schedule)
@@ -350,6 +349,7 @@
           // var confidence = plane.material.uniforms.confidence.value;
           var confidence = 0.01;
           var tick = dt * (0.5 + 1.25 * (1.0 - confidence));
+          tick *= 0.5;
 
           plane.material.uniforms.time.value += tick / 1000;
 
@@ -388,7 +388,7 @@
 
         function schedule() {
 
-          var interval = timer.interval;
+          var interval = timer.interval * 2;
           var clock = new Date();
           var time = clock.getSeconds() * 1000 + clock.getMilliseconds();
           var to = interval - (time % interval);
